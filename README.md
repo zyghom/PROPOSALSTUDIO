@@ -86,6 +86,12 @@ GEMINI_API_KEY = AIza…votre clé…
 C'est tout : rechargez l'app, ouvrez **Nouvelle offre**, collez l'URL d'un
 site et cliquez **Analyser**. Les champs se remplissent tout seuls.
 
+> **Modèle Gemini.** La fonction utilise `gemini-3.5-flash` par défaut. Si un
+> jour Google le retire (erreur `404 … no longer available`), ajoutez un
+> secret `GEMINI_MODEL` avec le nom d'un modèle Flash actuel (voir
+> [ai.google.dev/gemini-api/docs/models](https://ai.google.dev/gemini-api/docs/models)) —
+> aucun changement de code nécessaire.
+
 > La fonction s'exécute sur les serveurs de Supabase et n'a besoin d'aucune
 > installation de votre côté. Pour la déployer plutôt en ligne de commande :
 > `supabase functions deploy enrich-company` puis

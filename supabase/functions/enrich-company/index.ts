@@ -11,7 +11,8 @@
 // La clé API Gemini est lue depuis le secret GEMINI_API_KEY (jamais exposée
 // au navigateur). Voir README.md pour l'obtenir (gratuit) et déployer.
 
-const GEMINI_MODEL = "gemini-2.5-flash";
+// Modèle Gemini. Surchargeable via le secret GEMINI_MODEL si Google le renomme.
+const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") || "gemini-3.5-flash";
 
 const SECTEURS = [
   "Métallurgie",
