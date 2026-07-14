@@ -72,6 +72,8 @@ function initialState() {
     sigName: "",
     signed: false,
     signedAt: "",
+    enriching: false,
+    urlInput: "",
     toast: "",
   };
 }
@@ -168,6 +170,61 @@ export default function App() {
     } catch (e) {
       console.error("Supabase :", e);
       showToast("Erreur de sauvegarde");
+    }
+  };
+
+  const enrichFromUrl = async (rawUrl) => {
+    const url = (rawUrl || "").trim();
+    if (!url) return;
+
+    // Sans Supabase : pré-remplissage basique à partir du nom de domaine.
+    if (!isSupabaseConfigured) {
+      const host = url.replace(/^https?:\/\//i, "").replace(/^www\./i, "").split("/")[0];
+      const name = (host.split(".")[0] || "")
+        .replace(/[-_]+/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      set((prev) => ({
+        garde: { ...prev.garde, entreprise: name },
+        composition: prev.composition.length ? prev.composition : ["garde", "contexte", "objectifs", "approche", "devis", "conditions", "signature"],
+        currentOfferId: null,
+        currentStatus: "brouillon",
+        expanded: "garde",
+        offerName: name ? `${name} — Nouvelle proposition` : "Nouvelle proposition",
+      }));
+      nav("builder");
+      showToast("Pré-remplissage basique — IA non configurée");
+      return;
+    }
+
+    set({ enriching: true });
+    try {
+      const { data, error } = await supabase.functions.invoke("enrich-company", { body: { url } });
+      if (error || data?.error) throw new Error(data?.error || error.message);
+      set((prev) => ({
+        garde: {
+          ...prev.garde,
+          entreprise: data.entreprise || prev.garde.entreprise,
+          secteur: data.secteur || prev.garde.secteur,
+          contact: data.contact || "",
+          fonction: data.fonction || "",
+          email: data.email || "",
+          tel: data.telephone || "",
+        },
+        contents: data.description ? { ...prev.contents, contexte: data.description } : prev.contents,
+        composition: prev.composition.length ? prev.composition : ["garde", "contexte", "objectifs", "approche", "devis", "conditions", "signature"],
+        currentOfferId: null,
+        currentStatus: "brouillon",
+        expanded: "garde",
+        offerName: data.entreprise ? `${data.entreprise} — Nouvelle proposition` : "Nouvelle proposition",
+        newOfferOpen: false,
+        enriching: false,
+      }));
+      nav("builder");
+      showToast(`« ${data.entreprise || "Société"} » identifiée`);
+    } catch (e) {
+      console.error("Enrichissement :", e);
+      set({ enriching: false });
+      showToast(e.message || "Analyse du site impossible");
     }
   };
 
@@ -437,6 +494,7 @@ export default function App() {
     openOffer,
     removeOffer,
     deleteCurrentOffer,
+    enrichFromUrl,
     useTemplate,
     saveAsTemplate,
     duplicateTemplate,

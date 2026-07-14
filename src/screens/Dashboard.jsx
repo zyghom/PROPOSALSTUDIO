@@ -2,7 +2,7 @@ import { STATUS, ICONS, BLOCKS, FILTER_DEFS } from "../data";
 import { TODAY, fmt } from "../App";
 
 export default function Dashboard({ ctx }) {
-  const { s, set, nav, openOffer, removeOffer, useTemplate } = ctx;
+  const { s, set, nav, openOffer, removeOffer, useTemplate, enrichFromUrl } = ctx;
 
   const startBlank = () => {
     set({ composition: [], expanded: null, currentOfferId: null, currentStatus: "brouillon" });
@@ -332,6 +332,81 @@ export default function Dashboard({ ctx }) {
               <button className="modal-close" onClick={() => set({ newOfferOpen: false })} style={{ color: "#A8A8A8", fontSize: "18px", lineHeight: 1 }}>
                 ✕
               </button>
+            </div>
+
+            {/* Identification par IA à partir de l'URL */}
+            <div
+              style={{
+                border: "1px solid #E8E8E5",
+                borderRadius: "8px",
+                padding: "16px 18px",
+                marginBottom: "20px",
+                background: "rgb(248,252,253)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: "10px",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "rgb(20,120,135)",
+                  marginBottom: "10px",
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 3v2M12 19v2M3 12h2M19 12h2M6 6l1.5 1.5M16.5 16.5L18 18M18 6l-1.5 1.5M7.5 16.5L6 18" />
+                  <circle cx="12" cy="12" r="3.5" />
+                </svg>
+                Identifier via le site web — IA
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <input
+                  value={s.urlInput}
+                  onChange={(e) => set({ urlInput: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !s.enriching) enrichFromUrl(s.urlInput);
+                  }}
+                  placeholder="exemple : fonderie-delcourt.fr"
+                  disabled={s.enriching}
+                  style={{
+                    flex: 1,
+                    border: "1px solid #D4D4D0",
+                    borderRadius: "8px",
+                    padding: "10px 12px",
+                    fontSize: "14px",
+                    fontFamily: "inherit",
+                    background: "#fff",
+                  }}
+                />
+                <button
+                  className="btn-dark"
+                  onClick={() => enrichFromUrl(s.urlInput)}
+                  disabled={s.enriching || !s.urlInput.trim()}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "10px 18px",
+                    background: s.enriching || !s.urlInput.trim() ? "#B8B8B4" : "#353535",
+                    color: "#fff",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    whiteSpace: "nowrap",
+                    cursor: s.enriching || !s.urlInput.trim() ? "default" : "pointer",
+                    transition: "all 200ms cubic-bezier(0.22,1,0.36,1)",
+                  }}
+                >
+                  {s.enriching ? "Analyse…" : "Analyser"}
+                </button>
+              </div>
+              <div style={{ fontSize: "12px", color: "#7A7A7A", marginTop: "8px" }}>
+                Pré-remplit le client, le secteur et le contact automatiquement.
+              </div>
             </div>
             <button
               className="btn-outline"
