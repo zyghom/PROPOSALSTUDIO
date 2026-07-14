@@ -7,7 +7,7 @@ import Preview from "./screens/Preview";
 import Client from "./screens/Client";
 import Templates from "./screens/Templates";
 import { CATALOG, TJM_DEFAULT, OFFERS, TEMPLATES } from "./data";
-import { isSupabaseConfigured } from "./lib/supabase";
+import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import * as db from "./lib/db";
 
 export const TODAY = "Dimanche 13 juillet 2026";
