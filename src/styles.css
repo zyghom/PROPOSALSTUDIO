@@ -1,0 +1,145 @@
+:root {
+  --ink: #353535;
+  --teal: rgb(30, 159, 175);
+  --teal-dark: rgb(20, 120, 135);
+  --teal-bg: rgb(240, 250, 252);
+  --teal-border: rgb(225, 245, 248);
+  --bg: #fafaf9;
+  --panel-bg: #f4f4f2;
+  --border: #e8e8e5;
+  --border-strong: #d4d4d0;
+  --hairline: #f4f4f2;
+  --muted: #7a7a7a;
+  --faint: #a8a8a8;
+  --green-bg: #eaf7ee;
+  --green-fg: #16a34a;
+  --orange-bg: #fdf3e7;
+  --orange-fg: #c2410c;
+  --red-bg: #fdecec;
+  --red-fg: #dc2626;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  font-family: "Inter", system-ui, sans-serif;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--teal-dark);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--ink);
+}
+
+button {
+  font-family: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--teal) !important;
+  box-shadow: 0 0 0 3px var(--teal-border);
+}
+
+::selection {
+  background: var(--teal);
+  color: #fff;
+}
+
+/* ── hover utilities, ported from style-hover="" in the design source ── */
+
+.nav-btn:hover {
+  color: var(--ink);
+}
+
+.btn-dark:hover {
+  background: var(--teal) !important;
+  transform: translateY(-1px);
+}
+
+.btn-outline:hover {
+  border-color: var(--ink) !important;
+  background: var(--bg) !important;
+}
+
+.btn-outline-plain:hover {
+  border-color: var(--ink) !important;
+}
+
+.link-muted:hover {
+  color: var(--ink) !important;
+}
+
+.offer-row:hover {
+  background: var(--bg);
+}
+
+.template-card:hover {
+  border-color: var(--border-strong) !important;
+  transform: translateY(-2px);
+}
+
+.lib-block:hover:not(:disabled) {
+  border-color: var(--border-strong) !important;
+  background: var(--bg) !important;
+}
+
+.icon-btn:hover {
+  background: #f4f4f2;
+  color: var(--ink);
+}
+
+.icon-btn-danger:hover {
+  background: #f4f4f2;
+  color: var(--orange-fg);
+}
+
+.file-drop:hover {
+  border-color: var(--teal) !important;
+  color: var(--muted) !important;
+}
+
+.modal-close:hover {
+  color: var(--ink);
+}
+
+.template-row-btn:hover {
+  border-color: var(--ink) !important;
+  background: var(--bg) !important;
+}
+
+.template-delete-btn:hover {
+  border-color: var(--orange-fg) !important;
+  color: var(--orange-fg) !important;
+}
+
+.sign-btn.enabled:hover {
+  background: var(--teal) !important;
+  transform: translateY(-1px);
+}
+
+.consultant-back:hover {
+  color: var(--ink) !important;
+  border-color: var(--border-strong) !important;
+}
