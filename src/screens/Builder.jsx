@@ -22,7 +22,7 @@ const monoLabel = {
 };
 
 export default function Builder({ ctx }) {
-  const { s, set, nav, calcDays, moduleDays, totalHT, saveOffer, saveAsTemplate } = ctx;
+  const { s, set, nav, calcDays, moduleDays, totalHT, saveOffer, saveAsTemplate, deleteCurrentOffer } = ctx;
 
   return (
     <main style={{ maxWidth: "1280px", width: "100%", margin: "0 auto", padding: "32px 32px 140px" }}>
@@ -43,6 +43,30 @@ export default function Builder({ ctx }) {
           </div>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", gap: "10px" }}>
+          {s.currentOfferId && (
+            <button
+              className="template-delete-btn"
+              onClick={deleteCurrentOffer}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "10px 18px",
+                border: "1px solid #E8E8E5",
+                borderRadius: "999px",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "#A8A8A8",
+                background: "#fff",
+                transition: "all 200ms cubic-bezier(0.22,1,0.36,1)",
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+              </svg>
+              Supprimer
+            </button>
+          )}
           <button
             className="btn-outline"
             onClick={saveAsTemplate}

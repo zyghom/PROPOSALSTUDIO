@@ -191,6 +191,27 @@ export default function App() {
     }
   };
 
+  const deleteCurrentOffer = async () => {
+    const client = s.garde.entreprise || "cette offre";
+    if (!window.confirm(`Supprimer l'offre « ${client} » ?\nCette action est définitive.`)) return;
+    if (!isSupabaseConfigured || !s.currentOfferId) {
+      showToast("Suppression indisponible — offre non enregistrée");
+      return;
+    }
+    try {
+      await db.deleteOffer(s.currentOfferId);
+      set((prev) => ({
+        offers: prev.offers.filter((x) => x.id !== prev.currentOfferId),
+        currentOfferId: null,
+      }));
+      nav("dashboard");
+      showToast("Offre supprimée");
+    } catch (e) {
+      console.error("Supabase :", e);
+      showToast("Erreur de suppression");
+    }
+  };
+
   const openOffer = (o) => {
     const p = o.payload;
     set({
@@ -415,6 +436,7 @@ export default function App() {
     saveOffer,
     openOffer,
     removeOffer,
+    deleteCurrentOffer,
     useTemplate,
     saveAsTemplate,
     duplicateTemplate,
