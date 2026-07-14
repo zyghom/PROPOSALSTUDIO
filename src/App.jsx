@@ -199,7 +199,17 @@ export default function App() {
     set({ enriching: true });
     try {
       const { data, error } = await supabase.functions.invoke("enrich-company", { body: { url } });
-      if (error || data?.error) throw new Error(data?.error || error.message);
+      if (error) {
+        // Supabase renvoie un message générique ; on récupère le vrai détail
+        // renvoyé par la fonction (corps JSON { error: ... }).
+        let msg = error.message;
+        try {
+          const body = await error.context?.json?.();
+          if (body?.error) msg = body.error;
+        } catch { /* corps non JSON */ }
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
       set((prev) => ({
         garde: {
           ...prev.garde,
