@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import TopBar from "./components/TopBar";
 import Toast from "./components/Toast";
 import Dashboard from "./screens/Dashboard";
@@ -6,7 +6,9 @@ import Builder from "./screens/Builder";
 import Preview from "./screens/Preview";
 import Client from "./screens/Client";
 import Templates from "./screens/Templates";
-import { CATALOG, TJM_DEFAULT } from "./data";
+import { CATALOG, TJM_DEFAULT, OFFERS, TEMPLATES } from "./data";
+import { isSupabaseConfigured } from "./lib/supabase";
+import * as db from "./lib/db";
 
 export const TODAY = "Dimanche 13 juillet 2026";
 export const OFFER_NAME = "Fonderie Delcourt — Refonte supervision d'atelier";
@@ -32,6 +34,11 @@ function initialState() {
     search: "",
     filter: "all",
     newOfferOpen: false,
+    offers: OFFERS,
+    templates: TEMPLATES,
+    currentOfferId: null,
+    currentStatus: "brouillon",
+    offerName: OFFER_NAME,
     composition: [
       "garde",
       "profil",
@@ -102,6 +109,200 @@ export default function App() {
   const nav = (screen) => {
     set({ screen, newOfferOpen: false });
     window.scrollTo(0, 0);
+  };
+
+  // ─── Persistance Supabase ───
+
+  // Chargement initial (sinon l'app reste sur les données de démo)
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    (async () => {
+      try {
+        const [offers, templates] = await Promise.all([db.fetchOffers(), db.fetchTemplates()]);
+        set({ offers, templates });
+      } catch (e) {
+        console.error("Supabase :", e);
+        showToast("Connexion Supabase impossible — mode démo");
+      }
+    })();
+  }, []);
+
+  const buildPayload = () => ({
+    composition: s.composition,
+    garde: s.garde,
+    contents: s.contents,
+    devisMode: s.devisMode,
+    checked: s.checked,
+    days: s.days,
+    tjms: s.tjms,
+    forfait: s.forfait,
+    profils: s.profils,
+    signed: s.signed,
+    sigName: s.sigName,
+    signedAt: s.signedAt,
+  });
+
+  const saveOffer = async () => {
+    if (!isSupabaseConfigured) {
+      showToast("Offre sauvegardée — mode démo (Supabase non configuré)");
+      return;
+    }
+    try {
+      const saved = await db.upsertOffer({
+        id: s.currentOfferId || undefined,
+        client: s.garde.entreprise || "Sans client",
+        secteur: s.garde.secteur || "",
+        project: s.offerName,
+        date: db.todayLabel(),
+        amount: totalHT(),
+        status: s.currentStatus,
+        payload: buildPayload(),
+      });
+      set((prev) => ({
+        currentOfferId: saved.id,
+        offers: prev.offers.some((o) => o.id === saved.id)
+          ? prev.offers.map((o) => (o.id === saved.id ? saved : o))
+          : [saved, ...prev.offers],
+      }));
+      showToast("Offre sauvegardée");
+    } catch (e) {
+      console.error("Supabase :", e);
+      showToast("Erreur de sauvegarde");
+    }
+  };
+
+  const openOffer = (o) => {
+    const p = o.payload;
+    set({
+      currentOfferId: o.id ?? null,
+      currentStatus: o.status,
+      offerName: `${o.client} — ${o.project}`,
+      ...(p
+        ? {
+            composition: p.composition ?? [],
+            garde: p.garde ?? initialState().garde,
+            contents: p.contents ?? {},
+            devisMode: p.devisMode ?? "detaille",
+            checked: p.checked ?? {},
+            days: p.days ?? {},
+            tjms: p.tjms ?? {},
+            forfait: p.forfait ?? 0,
+            profils: p.profils ?? 4,
+            signed: p.signed ?? false,
+            sigName: p.sigName ?? "",
+            signedAt: p.signedAt ?? "",
+          }
+        : {}),
+      expanded: null,
+    });
+    nav("builder");
+  };
+
+  const useTemplate = (t) => {
+    set({ composition: [...t.ids], expanded: null, currentOfferId: null, currentStatus: "brouillon" });
+    nav("builder");
+    showToast(`Template « ${t.name} » chargé`);
+    if (isSupabaseConfigured && t.id) {
+      db.incrementTemplateUsed(t)
+        .then(() =>
+          set((prev) => ({ templates: prev.templates.map((x) => (x.id === t.id ? { ...x, used: (x.used ?? 0) + 1 } : x)) }))
+        )
+        .catch((e) => console.error("Supabase :", e));
+    }
+  };
+
+  const saveAsTemplate = async () => {
+    const name = window.prompt("Nom du template :", "Nouveau template");
+    if (!name) return;
+    if (!isSupabaseConfigured) {
+      showToast("Template sauvegardé — mode démo (Supabase non configuré)");
+      return;
+    }
+    try {
+      const t = await db.insertTemplate({ name: name.trim(), ids: s.composition });
+      set((prev) => ({ templates: [...prev.templates, t] }));
+      showToast(`Template « ${t.name} » sauvegardé`);
+    } catch (e) {
+      console.error("Supabase :", e);
+      showToast("Erreur de sauvegarde du template");
+    }
+  };
+
+  const duplicateTemplate = async (t) => {
+    if (!isSupabaseConfigured || !t.id) {
+      showToast("Template dupliqué — mode démo");
+      return;
+    }
+    try {
+      const copy = await db.insertTemplate({ name: `${t.name} (copie)`, ids: t.ids });
+      set((prev) => ({ templates: [...prev.templates, copy] }));
+      showToast("Template dupliqué");
+    } catch (e) {
+      console.error("Supabase :", e);
+      showToast("Erreur de duplication");
+    }
+  };
+
+  const removeTemplate = async (t) => {
+    if (!window.confirm(`Supprimer le template « ${t.name} » ?`)) return;
+    if (!isSupabaseConfigured || !t.id) {
+      showToast("Template supprimé — mode démo");
+      return;
+    }
+    try {
+      await db.deleteTemplate(t.id);
+      set((prev) => ({ templates: prev.templates.filter((x) => x.id !== t.id) }));
+      showToast("Template supprimé");
+    } catch (e) {
+      console.error("Supabase :", e);
+      showToast("Erreur de suppression");
+    }
+  };
+
+  const sendToClient = async () => {
+    nav("client");
+    if (!isSupabaseConfigured) {
+      showToast("Lien client unique généré — démo");
+      return;
+    }
+    try {
+      const status = s.currentStatus === "brouillon" ? "envoyee" : s.currentStatus;
+      const saved = await db.upsertOffer({
+        id: s.currentOfferId || undefined,
+        client: s.garde.entreprise || "Sans client",
+        secteur: s.garde.secteur || "",
+        project: s.offerName,
+        date: db.todayLabel(),
+        amount: totalHT(),
+        status,
+        payload: buildPayload(),
+      });
+      set((prev) => ({
+        currentOfferId: saved.id,
+        currentStatus: status,
+        offers: prev.offers.some((o) => o.id === saved.id)
+          ? prev.offers.map((o) => (o.id === saved.id ? saved : o))
+          : [saved, ...prev.offers],
+      }));
+      showToast("Offre envoyée au client");
+    } catch (e) {
+      console.error("Supabase :", e);
+      showToast("Erreur lors de l'envoi");
+    }
+  };
+
+  const onSigned = (stamp) => {
+    set({ signed: true, signedAt: stamp });
+    if (isSupabaseConfigured && s.currentOfferId) {
+      db.updateOfferStatus(s.currentOfferId, "signee")
+        .then(() => {
+          set((prev) => ({
+            currentStatus: "signee",
+            offers: prev.offers.map((o) => (o.id === prev.currentOfferId ? { ...o, status: "signee" } : o)),
+          }));
+        })
+        .catch((e) => console.error("Supabase :", e));
+    }
   };
 
   const getDoc = (signed) => {
@@ -181,7 +382,25 @@ export default function App() {
     };
   };
 
-  const ctx = { s, set, fmt, calcDays, moduleDays, totalHT, showToast, nav, getDoc };
+  const ctx = {
+    s,
+    set,
+    fmt,
+    calcDays,
+    moduleDays,
+    totalHT,
+    showToast,
+    nav,
+    getDoc,
+    saveOffer,
+    openOffer,
+    useTemplate,
+    saveAsTemplate,
+    duplicateTemplate,
+    removeTemplate,
+    sendToClient,
+    onSigned,
+  };
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>

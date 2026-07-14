@@ -1,9 +1,9 @@
 import ProposalDoc from "../components/ProposalDoc";
 import logoFred from "../assets/logo-fred.svg";
-import { TODAY, OFFER_NAME } from "../App";
+import { TODAY } from "../App";
 
 export default function Client({ ctx }) {
-  const { s, set, nav, showToast, getDoc } = ctx;
+  const { s, set, nav, showToast, getDoc, onSigned } = ctx;
   const signReady = s.accepted && s.sigName.trim().length > 1;
 
   const onSign = () => {
@@ -11,7 +11,7 @@ export default function Client({ ctx }) {
     const now = new Date();
     const stamp =
       now.toLocaleDateString("fr-FR") + " · " + now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-    set({ signed: true, signedAt: stamp });
+    onSigned(stamp);
     window.scrollTo(0, 0);
   };
 
@@ -33,7 +33,7 @@ export default function Client({ ctx }) {
                 marginTop: "2px",
               }}
             >
-              {OFFER_NAME} · {TODAY}
+              {s.offerName} · {TODAY}
             </div>
           </div>
           {!s.signed && (

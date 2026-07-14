@@ -1,8 +1,7 @@
 import ProposalDoc from "../components/ProposalDoc";
-import { OFFER_NAME } from "../App";
 
 export default function Preview({ ctx }) {
-  const { s, nav, showToast, getDoc } = ctx;
+  const { s, nav, showToast, getDoc, sendToClient } = ctx;
 
   return (
     <main style={{ width: "100%", padding: "32px 32px 96px", background: "#F4F4F2", flex: 1 }}>
@@ -27,7 +26,7 @@ export default function Preview({ ctx }) {
             ← Modifier
           </button>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: "15px", fontWeight: 600 }}>{OFFER_NAME}</div>
+            <div style={{ fontSize: "15px", fontWeight: 600 }}>{s.offerName}</div>
             <div
               style={{
                 fontFamily: "'JetBrains Mono', monospace",
@@ -73,10 +72,7 @@ export default function Preview({ ctx }) {
           </button>
           <button
             className="btn-dark"
-            onClick={() => {
-              nav("client");
-              showToast("Lien client unique généré — démo");
-            }}
+            onClick={sendToClient}
             style={{
               display: "inline-flex",
               alignItems: "center",

@@ -1,30 +1,35 @@
-import { OFFERS, STATUS, TEMPLATES, ICONS, BLOCKS, FILTER_DEFS } from "../data";
+import { STATUS, ICONS, BLOCKS, FILTER_DEFS } from "../data";
 import { TODAY, fmt } from "../App";
 
-const metrics = [
-  { label: "Offres en cours", value: "3", sub: "brouillon, envoyée, consultée" },
-  { label: "Montant en pipeline", value: "48 050 €", sub: "HT — hors offres signées" },
-  { label: "Taux de signature", value: "58 %", sub: "sur les 12 derniers mois" },
-];
-
 export default function Dashboard({ ctx }) {
-  const { s, set, nav, showToast } = ctx;
+  const { s, set, nav, openOffer, useTemplate } = ctx;
 
   const startBlank = () => {
-    set({ composition: [], expanded: null });
+    set({ composition: [], expanded: null, currentOfferId: null, currentStatus: "brouillon" });
     nav("builder");
   };
 
-  const useTemplate = (t) => {
-    set({ composition: [...t.ids], expanded: null });
-    nav("builder");
-    showToast(`Template « ${t.name} » chargé`);
-  };
+  const enCours = s.offers.filter((o) => ["brouillon", "envoyee", "consultee"].includes(o.status));
+  const decidees = s.offers.filter((o) => ["signee", "refusee", "expiree"].includes(o.status));
+  const signees = s.offers.filter((o) => o.status === "signee");
+  const metrics = [
+    { label: "Offres en cours", value: String(enCours.length), sub: "brouillon, envoyée, consultée" },
+    {
+      label: "Montant en pipeline",
+      value: fmt(enCours.reduce((t, o) => t + o.amount, 0)),
+      sub: "HT — hors offres signées",
+    },
+    {
+      label: "Taux de signature",
+      value: decidees.length ? Math.round((signees.length / decidees.length) * 100) + " %" : "—",
+      sub: "sur les offres décidées",
+    },
+  ];
 
   const q = s.search.toLowerCase();
-  const offers = OFFERS.filter((o) => s.filter === "all" || o.status === s.filter).filter(
-    (o) => !q || o.client.toLowerCase().includes(q) || o.project.toLowerCase().includes(q)
-  );
+  const offers = s.offers
+    .filter((o) => s.filter === "all" || o.status === s.filter)
+    .filter((o) => !q || o.client.toLowerCase().includes(q) || o.project.toLowerCase().includes(q));
 
   return (
     <main style={{ maxWidth: "1280px", width: "100%", margin: "0 auto", padding: "48px 32px 96px" }}>
@@ -141,9 +146,9 @@ export default function Dashboard({ ctx }) {
           const st = STATUS[o.status];
           return (
             <div
-              key={i}
+              key={o.id ?? i}
               className="offer-row"
-              onClick={() => nav("builder")}
+              onClick={() => openOffer(o)}
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1.6fr 120px 110px 130px",
@@ -211,9 +216,9 @@ export default function Dashboard({ ctx }) {
         </button>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
-        {TEMPLATES.map((t) => (
+        {s.templates.map((t) => (
           <div
-            key={t.name}
+            key={t.id ?? t.name}
             className="template-card"
             onClick={() => useTemplate(t)}
             style={{
@@ -356,9 +361,9 @@ export default function Dashboard({ ctx }) {
               Ou partir d'un template
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {TEMPLATES.map((t) => (
+              {s.templates.map((t) => (
                 <button
-                  key={t.name}
+                  key={t.id ?? t.name}
                   className="btn-outline"
                   onClick={() => useTemplate(t)}
                   style={{

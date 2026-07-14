@@ -1,5 +1,5 @@
-import { LIB, ICONS, BLOCKS, CATALOG, SECTEURS } from "../data";
-import { OFFER_NAME, fmt } from "../App";
+import { LIB, ICONS, BLOCKS, CATALOG, SECTEURS, STATUS } from "../data";
+import { fmt } from "../App";
 
 function segStyle(active) {
   return {
@@ -22,7 +22,7 @@ const monoLabel = {
 };
 
 export default function Builder({ ctx }) {
-  const { s, set, nav, showToast, calcDays, moduleDays, totalHT } = ctx;
+  const { s, set, nav, calcDays, moduleDays, totalHT, saveOffer, saveAsTemplate } = ctx;
 
   return (
     <main style={{ maxWidth: "1280px", width: "100%", margin: "0 auto", padding: "32px 32px 140px" }}>
@@ -37,13 +37,15 @@ export default function Builder({ ctx }) {
         </button>
         <div style={{ width: "1px", height: "20px", background: "#E8E8E5" }} />
         <div>
-          <div style={{ fontSize: "15px", fontWeight: 600 }}>{OFFER_NAME}</div>
-          <div style={{ ...monoLabel, fontSize: "10px", marginTop: "2px" }}>Brouillon · modifié à l'instant</div>
+          <div style={{ fontSize: "15px", fontWeight: 600 }}>{s.offerName}</div>
+          <div style={{ ...monoLabel, fontSize: "10px", marginTop: "2px" }}>
+            {STATUS[s.currentStatus]?.label ?? "Brouillon"} · modifié à l'instant
+          </div>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", gap: "10px" }}>
           <button
             className="btn-outline"
-            onClick={() => showToast("Composition sauvegardée comme template")}
+            onClick={saveAsTemplate}
             style={{
               padding: "10px 18px",
               border: "1px solid #D4D4D0",
@@ -57,7 +59,7 @@ export default function Builder({ ctx }) {
           </button>
           <button
             className="btn-outline"
-            onClick={() => showToast("Offre sauvegardée")}
+            onClick={saveOffer}
             style={{
               padding: "10px 18px",
               border: "1px solid #D4D4D0",

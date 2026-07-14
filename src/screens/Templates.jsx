@@ -1,16 +1,10 @@
-import { TEMPLATES, ICONS, BLOCKS } from "../data";
+import { ICONS, BLOCKS } from "../data";
 
 export default function Templates({ ctx }) {
-  const { set, nav, showToast } = ctx;
-
-  const useTemplate = (t) => {
-    set({ composition: [...t.ids], expanded: null });
-    nav("builder");
-    showToast(`Template « ${t.name} » chargé`);
-  };
+  const { s, set, nav, useTemplate, duplicateTemplate, removeTemplate } = ctx;
 
   const startBlank = () => {
-    set({ composition: [], expanded: null });
+    set({ composition: [], expanded: null, currentOfferId: null, currentStatus: "brouillon" });
     nav("builder");
   };
 
@@ -58,9 +52,9 @@ export default function Templates({ ctx }) {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-        {TEMPLATES.map((t) => (
+        {s.templates.map((t) => (
           <div
-            key={t.name}
+            key={t.id ?? t.name}
             style={{
               background: "#fff",
               border: "1px solid #E8E8E5",
@@ -119,14 +113,14 @@ export default function Templates({ ctx }) {
               </button>
               <button
                 className="template-row-btn"
-                onClick={() => showToast("Template dupliqué")}
+                onClick={() => duplicateTemplate(t)}
                 style={{ padding: "8px 16px", border: "1px solid #D4D4D0", borderRadius: "999px", fontSize: "12px", fontWeight: 500, transition: "all 200ms" }}
               >
                 Dupliquer
               </button>
               <button
                 className="template-delete-btn"
-                onClick={() => showToast("Template supprimé — démo")}
+                onClick={() => removeTemplate(t)}
                 style={{
                   padding: "8px 16px",
                   border: "1px solid #E8E8E5",
