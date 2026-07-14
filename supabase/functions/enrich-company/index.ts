@@ -127,6 +127,7 @@ Deno.serve(async (req) => {
   }
 
   let data: Record<string, unknown> | null = null;
+  const diag: string[] = [];
 
   // Stratégie 1 — Gemini lit la page lui-même (robuste face aux anti-bots)
   try {
@@ -135,7 +136,9 @@ Deno.serve(async (req) => {
       `Analyse le site web de l'entreprise à l'URL : ${url}\n\n${FIELD_INSTRUCTIONS}`,
       true,
     );
+    if (!data?.entreprise) diag.push("url_context: réponse sans nom d'entreprise");
   } catch (e) {
+    diag.push("url_context: " + (e instanceof Error ? e.message : String(e)));
     console.error("url_context a échoué :", e);
   }
 
@@ -152,24 +155,33 @@ Deno.serve(async (req) => {
         redirect: "follow",
         signal: AbortSignal.timeout(12000),
       });
-      if (res.ok) {
+      if (!res.ok) {
+        diag.push(`fetch direct: HTTP ${res.status}`);
+      } else {
         const text = htmlToText(await res.text()).slice(0, 15000);
-        if (text.length >= 40) {
+        if (text.length < 40) {
+          diag.push("fetch direct: contenu texte insuffisant");
+        } else {
           data = await callGemini(
             apiKey,
             `Voici le contenu du site ${url}. ${FIELD_INSTRUCTIONS}\n\nContenu :\n${text}`,
             false,
           );
+          if (!data?.entreprise) diag.push("fetch direct: réponse sans nom d'entreprise");
         }
       }
     } catch (e) {
+      diag.push("fetch direct: " + (e instanceof Error ? e.message : String(e)));
       console.error("Repli fetch a échoué :", e);
     }
   }
 
   if (!data || !data.entreprise) {
     return json(
-      { error: "Impossible d'analyser ce site (contenu inaccessible ou protégé). Essayez une autre URL." },
+      {
+        error: "Impossible d'analyser ce site (contenu inaccessible ou protégé). Essayez une autre URL.",
+        detail: diag.join(" | "),
+      },
       422,
     );
   }
