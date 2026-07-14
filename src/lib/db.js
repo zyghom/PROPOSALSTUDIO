@@ -70,6 +70,11 @@ export async function updateOfferStatus(id, status, patch = {}) {
   if (error) throw error;
 }
 
+export async function deleteOffer(id) {
+  const { error } = await supabase.from("offers").delete().eq("id", id);
+  if (error) throw error;
+}
+
 // ─── Templates ───
 
 function rowToTemplate(r) {

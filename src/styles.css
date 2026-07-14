@@ -95,6 +95,18 @@ select:focus {
   background: var(--bg);
 }
 
+.offer-delete-btn {
+  opacity: 0;
+}
+.offer-row:hover .offer-delete-btn {
+  opacity: 1;
+}
+.offer-delete-btn:hover {
+  border-color: var(--orange-fg) !important;
+  color: var(--orange-fg) !important;
+  background: #fff !important;
+}
+
 .template-card:hover {
   border-color: var(--border-strong) !important;
   transform: translateY(-2px);

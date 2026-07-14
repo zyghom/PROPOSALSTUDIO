@@ -2,7 +2,7 @@ import { STATUS, ICONS, BLOCKS, FILTER_DEFS } from "../data";
 import { TODAY, fmt } from "../App";
 
 export default function Dashboard({ ctx }) {
-  const { s, set, nav, openOffer, useTemplate } = ctx;
+  const { s, set, nav, openOffer, removeOffer, useTemplate } = ctx;
 
   const startBlank = () => {
     set({ composition: [], expanded: null, currentOfferId: null, currentStatus: "brouillon" });
@@ -151,7 +151,7 @@ export default function Dashboard({ ctx }) {
               onClick={() => openOffer(o)}
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1.6fr 120px 110px 130px",
+                gridTemplateColumns: "1fr 1.6fr 120px 110px 130px 34px",
                 gap: "20px",
                 alignItems: "center",
                 padding: "18px 28px",
@@ -196,6 +196,31 @@ export default function Dashboard({ ctx }) {
                   {st.label}
                 </span>
               </div>
+              <button
+                className="offer-delete-btn"
+                title="Supprimer l'offre"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeOffer(o);
+                }}
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "6px",
+                  border: "1px solid transparent",
+                  background: "transparent",
+                  color: "#C4C4C0",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  transition: "all 200ms",
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                </svg>
+              </button>
             </div>
           );
         })}

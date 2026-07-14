@@ -171,6 +171,26 @@ export default function App() {
     }
   };
 
+  const removeOffer = async (o) => {
+    if (!window.confirm(`Supprimer l'offre « ${o.client} » ?\nCette action est définitive.`)) return;
+    if (!isSupabaseConfigured || !o.id) {
+      set((prev) => ({ offers: prev.offers.filter((x) => x !== o) }));
+      showToast("Offre supprimée — mode démo");
+      return;
+    }
+    try {
+      await db.deleteOffer(o.id);
+      set((prev) => ({
+        offers: prev.offers.filter((x) => x.id !== o.id),
+        currentOfferId: prev.currentOfferId === o.id ? null : prev.currentOfferId,
+      }));
+      showToast("Offre supprimée");
+    } catch (e) {
+      console.error("Supabase :", e);
+      showToast("Erreur de suppression");
+    }
+  };
+
   const openOffer = (o) => {
     const p = o.payload;
     set({
@@ -394,6 +414,7 @@ export default function App() {
     getDoc,
     saveOffer,
     openOffer,
+    removeOffer,
     useTemplate,
     saveAsTemplate,
     duplicateTemplate,
