@@ -11,8 +11,12 @@
 // La clé API Gemini est lue depuis le secret GEMINI_API_KEY (jamais exposée
 // au navigateur). Voir README.md pour l'obtenir (gratuit) et déployer.
 
-// Modèle Gemini. Surchargeable via le secret GEMINI_MODEL si Google le renomme.
-const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") || "gemini-3.5-flash";
+// Modèles Gemini essayés dans l'ordre (le premier qui répond gagne).
+// Surchargeable via le secret GEMINI_MODEL (liste séparée par des virgules).
+const GEMINI_MODELS = (Deno.env.get("GEMINI_MODEL") || "gemini-3.5-flash,gemini-3.1-flash-lite,gemini-flash-latest")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 const SECTEURS = [
   "Métallurgie",
@@ -80,9 +84,12 @@ const FIELD_INSTRUCTIONS =
   "- description : résumé de l'activité en 1 à 2 phrases en français\n" +
   "Si une information est absente, mets une chaîne vide.";
 
-async function callGemini(apiKey: string, prompt: string, useUrlContext: boolean) {
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// Un seul appel, pour un modèle donné.
+async function callGeminiModel(apiKey: string, model: string, prompt: string, useUrlContext: boolean) {
   const endpoint =
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=` +
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=` +
     encodeURIComponent(apiKey);
 
   const body: Record<string, unknown> = {
@@ -99,8 +106,10 @@ async function callGemini(apiKey: string, prompt: string, useUrlContext: boolean
   });
   if (!res.ok) {
     const detail = await res.text();
-    console.error("Gemini HTTP", res.status, detail);
-    throw new Error(`Erreur du service IA (HTTP ${res.status}).`);
+    console.error(`Gemini HTTP ${res.status} [${model}]`, detail);
+    const err = new Error(`Erreur du service IA (HTTP ${res.status}).`);
+    (err as Error & { status?: number }).status = res.status;
+    throw err;
   }
   const payload = await res.json();
   const textOut = payload?.candidates?.[0]?.content?.parts
@@ -109,6 +118,28 @@ async function callGemini(apiKey: string, prompt: string, useUrlContext: boolean
   const parsed = parseJsonLoose(textOut);
   if (!parsed) throw new Error("Réponse IA illisible.");
   return parsed;
+}
+
+// Essaie chaque modèle, avec un nouvel essai en cas de surcharge (503/429).
+async function callGemini(apiKey: string, prompt: string, useUrlContext: boolean) {
+  let lastErr: unknown;
+  for (const model of GEMINI_MODELS) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await callGeminiModel(apiKey, model, prompt, useUrlContext);
+      } catch (e) {
+        lastErr = e;
+        const status = (e as Error & { status?: number })?.status;
+        // Surcharge transitoire → petite pause puis nouvel essai du même modèle
+        if ((status === 503 || status === 429) && attempt === 0) {
+          await sleep(1500);
+          continue;
+        }
+        break; // sinon on passe au modèle suivant
+      }
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("Appel IA impossible.");
 }
 
 Deno.serve(async (req) => {
