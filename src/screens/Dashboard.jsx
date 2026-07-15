@@ -1,5 +1,5 @@
 import { STATUS, ICONS, BLOCKS, FILTER_DEFS } from "../data";
-import { TODAY, fmt } from "../App";
+import { TODAY, fmt, AI_ENRICH_ENABLED } from "../App";
 
 export default function Dashboard({ ctx }) {
   const { s, set, nav, openOffer, removeOffer, useTemplate, enrichFromUrl } = ctx;
@@ -358,10 +358,9 @@ export default function Dashboard({ ctx }) {
                 }}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 3v2M12 19v2M3 12h2M19 12h2M6 6l1.5 1.5M16.5 16.5L18 18M18 6l-1.5 1.5M7.5 16.5L6 18" />
-                  <circle cx="12" cy="12" r="3.5" />
+                  <path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" />
                 </svg>
-                Identifier via le site web — IA
+                {AI_ENRICH_ENABLED ? "Identifier via le site web — IA" : "Pré-remplir depuis l'URL du site"}
               </div>
               <div style={{ display: "flex", gap: "8px" }}>
                 <input
@@ -401,11 +400,13 @@ export default function Dashboard({ ctx }) {
                     transition: "all 200ms cubic-bezier(0.22,1,0.36,1)",
                   }}
                 >
-                  {s.enriching ? "Analyse…" : "Analyser"}
+                  {s.enriching ? "Analyse…" : AI_ENRICH_ENABLED ? "Analyser" : "Pré-remplir"}
                 </button>
               </div>
               <div style={{ fontSize: "12px", color: "#7A7A7A", marginTop: "8px" }}>
-                Pré-remplit le client, le secteur et le contact automatiquement.
+                {AI_ENRICH_ENABLED
+                  ? "Pré-remplit le client, le secteur et le contact automatiquement."
+                  : "Renseigne le nom du client à partir du domaine."}
               </div>
             </div>
             <button

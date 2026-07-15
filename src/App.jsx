@@ -13,6 +13,11 @@ import * as db from "./lib/db";
 export const TODAY = "Dimanche 13 juillet 2026";
 export const OFFER_NAME = "Fonderie Delcourt — Refonte supervision d'atelier";
 
+// Analyse IA du site (fonction Edge Gemini) désactivée par défaut.
+// Pour la réactiver : déployer la fonction « enrich-company » puis mettre
+// VITE_AI_ENRICH=true dans .env.local.
+export const AI_ENRICH_ENABLED = import.meta.env.VITE_AI_ENRICH === "true";
+
 export function fmt(n) {
   return Math.round(n).toLocaleString("fr-FR") + " €";
 }
@@ -177,8 +182,9 @@ export default function App() {
     const url = (rawUrl || "").trim();
     if (!url) return;
 
-    // Sans Supabase : pré-remplissage basique à partir du nom de domaine.
-    if (!isSupabaseConfigured) {
+    // Pré-remplissage basique à partir du nom de domaine (IA désactivée
+    // ou Supabase non configuré).
+    if (!isSupabaseConfigured || !AI_ENRICH_ENABLED) {
       const host = url.replace(/^https?:\/\//i, "").replace(/^www\./i, "").split("/")[0];
       const name = (host.split(".")[0] || "")
         .replace(/[-_]+/g, " ")
@@ -190,9 +196,10 @@ export default function App() {
         currentStatus: "brouillon",
         expanded: "garde",
         offerName: name ? `${name} — Nouvelle proposition` : "Nouvelle proposition",
+        newOfferOpen: false,
       }));
       nav("builder");
-      showToast("Pré-remplissage basique — IA non configurée");
+      showToast(name ? `Client « ${name} » pré-rempli` : "Composition créée");
       return;
     }
 

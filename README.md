@@ -45,16 +45,30 @@ L'app fonctionne sans configuration : sans base de données, elle démarre en
 > accès complet via cette clé — voir le commentaire dans `schema.sql` pour
 > passer à un accès par utilisateur si vous ajoutez l'authentification.
 
-## Identification d'une société par IA (optionnel)
+## Pré-remplissage depuis l'URL du site
 
-Lors de la création d'une offre, vous pouvez saisir l'**URL du site web** du
-prospect : une IA (Google Gemini) analyse le site et pré-remplit
-automatiquement le client, le secteur, le contact et une description.
+Lors de la création d'une offre, un champ **URL du site** permet de
+pré-remplir rapidement le client. Par défaut, il déduit simplement le nom de
+l'entreprise à partir du domaine (ex. `fonderie-delcourt.fr` → « Fonderie
+Delcourt ») — sans coût ni configuration.
+
+### Activer l'analyse complète par IA (optionnel)
+
+Une IA (Google Gemini) peut aller plus loin : lire le site et remplir aussi le
+secteur, le contact, l'e-mail et une description. C'est **désactivé par
+défaut**. Pour l'activer :
+
+1. Déployez la fonction Edge et configurez la clé Gemini (voir ci-dessous).
+2. Ajoutez `VITE_AI_ENRICH=true` dans votre `.env.local`, puis relancez `npm run dev`.
 
 L'appel à l'IA se fait dans une **fonction Supabase Edge** (`enrich-company`),
-côté serveur — la clé API n'est jamais exposée dans le navigateur. Sans cette
-fonction, le champ URL reste utilisable mais ne fait qu'un pré-remplissage
-basique (nom déduit du domaine).
+côté serveur — la clé API n'est jamais exposée dans le navigateur.
+
+> ⚠️ L'offre **gratuite** de Gemini peut être momentanément saturée (erreur
+> 503 « forte demande ») : la fonction réessaie automatiquement, sinon il
+> suffit de relancer l'analyse un peu plus tard. Pour une fiabilité maximale,
+> activez la facturation sur votre compte Google AI (un quota gratuit
+> généreux reste inclus).
 
 ### 1. Obtenir une clé Gemini (gratuit)
 
