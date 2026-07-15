@@ -120,26 +120,33 @@ async function callGeminiModel(apiKey: string, model: string, prompt: string, us
   return parsed;
 }
 
-// Essaie chaque modèle, avec un nouvel essai en cas de surcharge (503/429).
+// Essaie chaque modèle, avec plusieurs tentatives en cas de surcharge (503/429).
 async function callGemini(apiKey: string, prompt: string, useUrlContext: boolean) {
   let lastErr: unknown;
+  let overloaded = false;
   for (const model of GEMINI_MODELS) {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    const backoffs = [900, 2000, 3500]; // attentes progressives entre tentatives
+    for (let attempt = 0; attempt <= backoffs.length; attempt++) {
       try {
         return await callGeminiModel(apiKey, model, prompt, useUrlContext);
       } catch (e) {
         lastErr = e;
         const status = (e as Error & { status?: number })?.status;
-        // Surcharge transitoire → petite pause puis nouvel essai du même modèle
-        if ((status === 503 || status === 429) && attempt === 0) {
-          await sleep(1500);
-          continue;
+        if (status === 503 || status === 429) {
+          overloaded = true;
+          if (attempt < backoffs.length) {
+            await sleep(backoffs[attempt]);
+            continue; // nouvel essai du même modèle
+          }
+          break; // ce modèle est saturé → modèle suivant
         }
-        break; // sinon on passe au modèle suivant
+        break; // autre erreur (modèle indisponible…) → modèle suivant
       }
     }
   }
-  throw lastErr instanceof Error ? lastErr : new Error("Appel IA impossible.");
+  const err = lastErr instanceof Error ? lastErr : new Error("Appel IA impossible.");
+  (err as Error & { overloaded?: boolean }).overloaded = overloaded;
+  throw err;
 }
 
 Deno.serve(async (req) => {
@@ -160,6 +167,7 @@ Deno.serve(async (req) => {
 
   let data: Record<string, unknown> | null = null;
   const diag: string[] = [];
+  let overloaded = false;
 
   // Stratégie 1 — Gemini lit la page lui-même (robuste face aux anti-bots)
   try {
@@ -170,6 +178,7 @@ Deno.serve(async (req) => {
     );
     if (!data?.entreprise) diag.push("url_context: réponse sans nom d'entreprise");
   } catch (e) {
+    if ((e as Error & { overloaded?: boolean })?.overloaded) overloaded = true;
     diag.push("url_context: " + (e instanceof Error ? e.message : String(e)));
     console.error("url_context a échoué :", e);
   }
@@ -203,12 +212,22 @@ Deno.serve(async (req) => {
         }
       }
     } catch (e) {
+      if ((e as Error & { overloaded?: boolean })?.overloaded) overloaded = true;
       diag.push("fetch direct: " + (e instanceof Error ? e.message : String(e)));
       console.error("Repli fetch a échoué :", e);
     }
   }
 
   if (!data || !data.entreprise) {
+    if (overloaded) {
+      return json(
+        {
+          error: "Le service d'IA est momentanément saturé (forte demande). Réessayez dans quelques instants.",
+          detail: diag.join(" | "),
+        },
+        503,
+      );
+    }
     return json(
       {
         error: "Impossible d'analyser ce site (contenu inaccessible ou protégé). Essayez une autre URL.",
