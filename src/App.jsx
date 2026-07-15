@@ -438,6 +438,26 @@ export default function App() {
         })
       );
     }
+
+    // Contenu des blocs texte libre saisis dans le constructeur.
+    const linesOf = (id) =>
+      (s.contents[id] || "")
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean);
+
+    const objectifs = linesOf("objectifs").map((text, i) => ({ num: String(i + 1).padStart(2, "0"), text }));
+    const phases = linesOf("approche").map((text, i) => ({ num: "P" + (i + 1), name: text }));
+    const conditionLines = linesOf("conditions");
+    const conditions = conditionLines.length
+      ? conditionLines.map((text) => ({ label: null, text }))
+      : [
+          { label: "Validité", text: "Cette proposition est valable 30 jours à compter de sa date d'émission." },
+          { label: "Paiement", text: "40 % à la signature, 60 % à la restitution finale. Virement à 30 jours." },
+          { label: "Propriété", text: "Les livrables sont la propriété du client après paiement intégral." },
+          { label: "Confidentialité", text: "Les données recueillies restent strictement confidentielles." },
+        ];
+
     return {
       ref: "PR-2026-041",
       date: "13 · 07 · 2026",
@@ -446,54 +466,27 @@ export default function App() {
       clientSecteur: g.secteur,
       clientContact: g.contact || "—",
       clientFonction: g.fonction || "—",
-      title: "Refonte de la supervision d'atelier — audit UX & discovery.",
-      lede: "Comprendre le travail réel des opérateurs et des chefs d'atelier, objectiver les irritants de la supervision actuelle, et poser les fondations d'un outil qui se fait oublier.",
+      title: s.offerName || "Proposition commerciale",
+      lede: "",
       tags: ["UX Research", "Discovery", "Industrie", "AI Prototyping"],
       refs: "12 ans d'expérience · 50+ missions · industrie, énergie, terrain",
-      contexte:
-        "Fonderie Delcourt pilote trois lignes de production avec un outil de supervision développé en interne il y a neuf ans. Les équipes contournent l'outil — doubles saisies, fichiers parallèles, appels radio — et la direction manque de visibilité fiable sur les arrêts de ligne. Une refonte est envisagée, mais le périmètre réel du besoin n'a jamais été objectivé par une recherche terrain.",
-      problematique:
-        "Sur des métiers complexes, le design ne s'invente pas à l'écran. Que doit devenir la supervision pour servir le travail réel — et non l'inverse ?",
-      objectifs: [
-        { num: "01", text: "Cartographier le travail réel des 4 profils métiers concernés par la supervision." },
-        { num: "02", text: "Objectiver et prioriser les irritants de l'outil actuel, chiffrés en temps perdu." },
-        { num: "03", text: "Livrer une vision cible et une roadmap actionnable pour la refonte." },
-      ],
-      phases: [
-        {
-          num: "P1",
-          name: "Cadrage",
-          desc: "Ateliers avec les parties prenantes, alignement sur le périmètre et les hypothèses.",
-          duration: "1 sem",
-        },
-        {
-          num: "P2",
-          name: "Recherche terrain",
-          desc: "Entretiens par profil métier, observation en poste, shadowing des équipes de nuit.",
-          duration: "3 sem",
-        },
-        {
-          num: "P3",
-          name: "Synthèse & opportunités",
-          desc: "Personas, cartographie des parcours, priorisation des opportunités.",
-          duration: "2 sem",
-        },
-        { num: "P4", name: "Restitution & roadmap", desc: "Restitution aux équipes, vision cible, roadmap de refonte.", duration: "1 sem" },
-      ],
+      contexte: s.contents.contexte || "",
+      problematique: s.contents.problematique || "",
+      objectifs,
+      phases,
       rows,
       totalHT: fmt(ht),
       tva: fmt(tva),
       ttc: fmt(ht + tva),
-      conditions: [
-        { label: "Validité", text: "Cette proposition est valable 30 jours à compter de sa date d'émission." },
-        { label: "Paiement", text: "40 % à la signature, 60 % à la restitution finale. Virement à 30 jours." },
-        { label: "Propriété", text: "Les livrables sont la propriété du client après paiement intégral." },
-        { label: "Confidentialité", text: "L'ensemble des données recueillies sur le terrain reste strictement confidentiel." },
-      ],
+      conditions,
       signed,
       unsigned: !signed,
       signedName: s.sigName || s.garde.contact,
       signedAt: s.signedAt,
+      // Composition réelle de l'offre, pour que l'aperçu suive exactement
+      // les blocs choisis (et leur ordre) dans le constructeur.
+      composition: s.composition,
+      contents: s.contents,
     };
   };
 
